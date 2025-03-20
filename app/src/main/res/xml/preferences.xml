@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+<!--    <EditTextPreference-->
+<!--        android:key="car_model"-->
+<!--        android:title="Модель автомобиля"-->
+<!--        android:summary="Введите модель вашего автомобиля"-->
+<!--        android:dialogTitle="Модель автомобиля" />-->
+
+<!--    <EditTextPreference-->
+<!--        android:key="fuel_type"-->
+<!--        android:title="Тип топлива"-->
+<!--        android:summary="Введите тип топлива (например, бензин, дизель)"-->
+<!--        android:dialogTitle="Тип топлива" />-->
+
+<!--    <SwitchPreferenceCompat-->
+<!--        android:key="notifications_enabled"-->
+<!--        android:title="Уведомления"-->
+<!--        android:summary="Включить или отключить уведомления о расходах"-->
+<!--        android:defaultValue="true" />-->
+    <SwitchPreferenceCompat
+        android:key="notifications"
+        android:title="Уведомления"
+        android:summary="Включить или отключить уведомления"
+        android:defaultValue="true"
+        android:icon="@drawable/baseline_circle_notifications_24"/>
+
+    <!-- Настройка звука -->
+    <SwitchPreferenceCompat
+        android:key="sound"
+        android:title="Звук"
+        android:summary="Включить или отключить звук"
+        android:defaultValue="true"
+        android:icon="@drawable/baseline_volume_up_24"/>
+
+    <!-- Настройка темы -->
+    <ListPreference
+        android:key="theme"
+        android:title="Тема приложения"
+        android:summary="Выберите тему приложения"
+        android:entries="@array/theme_entries"
+        android:entryValues="@array/theme_values"
+        android:defaultValue="light"
+        android:icon="@drawable/baseline_brightness_6_24"/>
+
+</PreferenceScreen>

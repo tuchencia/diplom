@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Логотип компании -->
+    <ImageView
+        android:id="@+id/companyLogo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/carsplash"
+        android:layout_gravity="center"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- Заголовок "О нас" -->
+    <TextView
+        android:id="@+id/aboutUsTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="О приложении"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_gravity="center"
+        android:layout_marginBottom="16dp"
+        android:textColor="@color/black"/>
+
+    <!-- Описание приложения -->
+    <TextView
+        android:id="@+id/appDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Это приложение предназначено для помощи водителям во владении своего транспортного средства. Приложение позволяет следить и анализировать расходы на транспорт, а также помогает в эксплуатации автомобиля обычному водителю."
+        android:textSize="16sp"
+        android:gravity=""/>
+
+    <TextView
+        android:id="@+id/author"
+        android:layout_marginTop="40dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="® Ruslan Alimov"
+        android:textSize="16sp" />
+    <!-- Версия приложения -->
+    <TextView
+        android:id="@+id/appVersion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Версия приложения: 1.1.7"
+        android:textSize="16sp" />
+
+    <!-- Текущий год -->
+    <TextView
+        android:id="@+id/currentYear"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="2021"
+        android:textSize="16sp"/>
+
+
+</LinearLayout>

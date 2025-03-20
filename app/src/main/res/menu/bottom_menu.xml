@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/car"
+        android:icon="@drawable/baseline_directions_car_24"
+        android:title="Авто" />
+
+    <item
+        android:id="@+id/data"
+        android:icon="@drawable/baseline_analytics_24"
+        android:title="Расходы" />
+
+    <item
+        android:id="@+id/gas"
+        android:icon="@drawable/baseline_local_gas_station_24"
+        android:title="Заправка" />
+</menu>

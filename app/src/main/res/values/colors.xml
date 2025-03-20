@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="teal_800">#15D995</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="lavender">#8692f7</color>
+    <color name="purple">#3e007b</color>
+    <color name="gray">#3C3C3C</color>
+    <color name="purplenight">#8E2EEC</color>
+    <color name="lightgray">#6F5D5C5C</color>
+    <color name="light_purple_background">#F3E5F5</color>
+    <color name="red">#AB0019</color>
+    <color name="stat">#0E51C1</color>
+    <color name="limit">#0E6D02</color>
+    <color name="license">#043F5D</color>
+    <color name="yellow">#998500</color>
+
+
+    <!-- Основные цвета -->
+    <color name="purple_light">#6200EE</color>
+    <color name="purple_light_variant">#4C00C4</color>
+    <color name="purple_secondary">#FF6200EE</color>
+    <color name="purple_secondary_variant">#C400C4</color>
+
+    <color name="purple_dark">#3A00C4</color>
+    <color name="purple_dark_variant">#2C00A4</color>
+
+    <!-- Фоны и текстовые цвета -->
+    <color name="background_light">#F5F5F5</color>
+    <color name="surface_light">#FFFFFF</color>
+    <color name="on_surface_light">#333333</color>
+    <color name="on_primary_light">#FFFFFF</color>
+    <color name="on_secondary_light">#FFFFFF</color>
+
+    <color name="background_dark">#333333</color>
+    <color name="surface_dark">#444444</color>
+    <color name="on_surface_dark">#FFFFFF</color>
+    <color name="on_primary_dark">#000000</color>
+    <color name="on_secondary_dark">#000000</color>
+
+</resources>

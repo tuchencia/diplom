@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Раздел: Добавление расхода -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Добавление расхода"
+            android:textSize="20sp"
+            android:textColor="@color/purple_500"
+            android:layout_marginBottom="16dp"
+            android:fontFamily="sans-serif-medium"/>
+
+        <!-- Поле для ввода описания расхода -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/expense_category_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Категория"
+            android:textColor="@color/purple_500"
+            android:textColorHint="@color/purple_500"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+            <AutoCompleteTextView
+                android:id="@+id/expense_category"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColorHint="@color/purple_200"
+                android:inputType="none"
+                android:focusable="false"
+                android:clickable="true"
+                android:singleLine="true"
+                android:background="@color/lightgray"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Поле для ввода суммы расхода -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Сумма">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/expense_amount"
+                android:maxLength="8"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Поле для ввода даты расхода -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Дата">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/expense_date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:clickable="true"
+                android:inputType="date" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <!-- Поле для ввода комментария -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/comment_input_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Комментарий">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/comment_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Кнопка добавления расхода -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_add_expense"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Добавить расход"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/purple_500"
+            android:textColor="@android:color/white"
+            android:paddingVertical="12dp"
+            app:cornerRadius="8dp"/>
+
+        <!-- Раздел: Лимит расходов -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Лимит расходов"
+            android:textSize="20sp"
+            android:textColor="@color/limit"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp"
+            android:fontFamily="sans-serif-medium"/>
+
+        <!-- Поле для ввода лимита расходов -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Лимит расходов">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/limit_input"
+                android:maxLength="8"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Кнопка установки лимита -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_set_limit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Установить лимит"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@color/limit"
+            android:textColor="@android:color/white"
+            android:paddingVertical="12dp"
+            app:cornerRadius="8dp"/>
+
+        <!-- Текст с текущим лимитом -->
+        <TextView
+            android:id="@+id/limit_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Лимит: 0 руб."
+            android:textSize="16sp"
+            android:layout_marginTop="8dp" />
+
+        <!-- Раздел: Статистика -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Статистика"
+            android:textSize="20sp"
+            android:textColor="@color/stat"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp"
+            android:fontFamily="sans-serif-medium"/>
+
+        <!-- Сетка для кнопок статистики -->
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="2"
+            android:rowCount="2"
+            android:alignmentMode="alignMargins"
+            android:columnOrderPreserved="false"
+            android:layout_marginTop="8dp">
+
+            <!-- Кнопка для отображения статистики за неделю -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/button_week"
+                android:layout_width="0dp"
+                android:layout_height="70dp"
+                android:layout_columnWeight="1"
+                android:text="За неделю"
+                android:layout_margin="8dp"
+                android:backgroundTint="@color/stat"
+                android:textColor="@android:color/white"
+                android:paddingVertical="12dp"
+                app:cornerRadius="8dp"/>
+
+            <!-- Кнопка для отображения статистики за месяц -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/button_month"
+                android:layout_width="0dp"
+                android:layout_height="70dp"
+                android:layout_columnWeight="1"
+                android:text="За месяц"
+                android:layout_margin="8dp"
+                android:backgroundTint="@color/stat"
+                android:textColor="@android:color/white"
+                android:paddingVertical="12dp"
+                app:cornerRadius="8dp"/>
+
+            <!-- Кнопка для отображения статистики за год -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/button_year"
+                android:layout_width="0dp"
+                android:layout_height="70dp"
+                android:layout_columnWeight="1"
+                android:text="За год"
+                android:layout_margin="8dp"
+                android:backgroundTint="@color/stat"
+                android:textColor="@android:color/white"
+                android:paddingVertical="12dp"
+                app:cornerRadius="8dp"/>
+
+            <!-- Кнопка для сравнения месяцев -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/button_compare_months"
+                android:layout_width="0dp"
+                android:layout_height="70dp"
+                android:layout_columnWeight="1"
+                android:text="Сравнить"
+                android:layout_margin="8dp"
+                android:backgroundTint="@color/stat"
+                android:textColor="@android:color/white"
+                android:paddingVertical="12dp"
+                app:cornerRadius="8dp"/>
+        </GridLayout>
+
+        <!-- Раздел: Прогресс и диаграммы -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Прогресс и диаграммы"
+            android:textSize="20sp"
+            android:textColor="@color/purple_500"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp"
+            android:fontFamily="sans-serif-medium"/>
+
+        <!-- Прогресс-бар для отображения общей суммы расходов -->
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/total_expense_progress"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:layout_marginTop="24dp"
+            app:trackColor="@color/light_purple_background"
+            app:indicatorColor="@color/purple_500"/>
+
+        <!-- Текст с общей суммой расходов -->
+        <TextView
+            android:id="@+id/total_expense_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Общая сумма: 0 руб."
+            android:textSize="18sp"
+            android:layout_marginTop="8dp" />
+
+        <!-- Круговая диаграмма для отображения расходов -->
+        <com.github.mikephil.charting.charts.PieChart
+            android:id="@+id/pie_chart_expenses"
+            android:layout_width="match_parent"
+            android:layout_height="400dp"
+            android:layout_marginTop="16dp" />
+
+        <!-- Столбчатая диаграмма для сравнения месяцев -->
+        <com.github.mikephil.charting.charts.BarChart
+            android:id="@+id/bar_chart_comparison"
+            android:layout_width="match_parent"
+            android:layout_height="400dp"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Плановые расходы"
+            android:textSize="20sp"
+            android:textColor="@color/teal_700"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp"
+            android:fontFamily="sans-serif-medium"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:weightSum="2">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/button_add_planned_expense"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Добавить плановый расход"
+                android:layout_weight="1"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="@color/teal_700"
+                android:textColor="@android:color/white"
+                android:paddingVertical="12dp"
+                app:cornerRadius="8dp"
+                android:padding="10dp"
+                android:layout_marginRight="10dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/view_planned_expense"
+                android:layout_width="match_parent"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Посмотреть плановые расходы"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="@color/teal_800"
+                android:textColor="@android:color/white"
+                android:paddingVertical="12dp"
+                app:cornerRadius="8dp"
+                android:padding="10dp"/>
+
+        </LinearLayout>
+
+
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_clear_expenses"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Удалить все расходы"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/red"
+            android:textColor="@android:color/white"
+            android:paddingVertical="12dp"
+            app:cornerRadius="8dp"/>
+
+    </LinearLayout>
+</ScrollView>

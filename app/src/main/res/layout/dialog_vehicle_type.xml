@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Заголовок диалога -->
+    <TextView
+        android:id="@+id/dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Выберите тип транспортного средства"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingBottom="16dp"/>
+
+    <!-- Список RadioButton -->
+    <RadioGroup
+        android:id="@+id/radio_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/radio_car"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Легковой автомобиль"
+            android:textSize="16sp"
+            android:padding="8dp"
+            android:buttonTint="@color/purple_500" />
+
+        <RadioButton
+            android:id="@+id/radio_truck"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Грузовик"
+            android:textSize="16sp"
+            android:padding="8dp"
+            android:buttonTint="@color/purple_500" />
+
+        <RadioButton
+            android:id="@+id/radio_motorcycle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Мотоцикл"
+            android:textSize="16sp"
+            android:padding="8dp"
+            android:buttonTint="@color/purple_500" />
+    </RadioGroup>
+</LinearLayout>

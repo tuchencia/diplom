@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Цвет подсказки, когда поле в фокусе -->
+    <item android:state_focused="true" android:color="@color/purple_500" />
+    <!-- Цвет подсказки, когда поле не в фокусе -->
+    <item android:color="@color/gray" />
+</selector>
