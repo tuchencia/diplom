@@ -6,9 +6,13 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.RatingBar;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.yandex.mapkit.Animation;
@@ -32,7 +36,10 @@ import com.yandex.runtime.Error;
 import com.yandex.runtime.image.ImageProvider;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class GasFragment extends Fragment {
 
@@ -43,53 +50,52 @@ public class GasFragment extends Fragment {
     private TrafficLayer trafficLayer; // Слой пробок
     private ImageButton trafficButton; // Кнопка для управления пробками
     private boolean isTrafficVisible = false; // Флаг для отслеживания состояния пробок
+    private final Map<MapObject, GasStationInfo> markersData = new HashMap<>();
     private static final String API_KEY = "4d462aaf-4063-4ad4-881e-91421919792b"; // Замените на ваш API-ключ
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        // Инициализация MapKit и SearchFactory
+        MapKitFactory.initialize(requireContext());
         SearchFactory.initialize(requireContext());
 
         View view = inflater.inflate(R.layout.fragment_gas, container, false);
         mapView = view.findViewById(R.id.mapView);
 
-        // Настройка карты (центрируем на Москве)
-        mapView.getMapWindow().getMap().move(
+        // Настройка начальной позиции карты
+        mapView.getMap().move(
                 new CameraPosition(new Point(55.7558, 37.6173), 12.5f, 0.0f, 0.0f),
                 new Animation(Animation.Type.SMOOTH, 2),
                 null
         );
 
-        // Инициализация SearchManager для поиска заправок
-        SearchFactory.initialize(requireContext());
+        // Инициализация менеджера поиска
         searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.ONLINE);
+        mapObjects = mapView.getMap().getMapObjects().addCollection();
 
-        // Инициализация коллекции объектов на карте
-        mapObjects = mapView.getMapWindow().getMap().getMapObjects().addCollection();
-
-        // Поиск заправок
+        // Поиск АЗС
         searchGasStations();
 
-        // Инициализация слоя пробок
+        // Настройка пробок
         trafficLayer = MapKitFactory.getInstance().createTrafficLayer(mapView.getMapWindow());
-        trafficLayer.setTrafficVisible(isTrafficVisible);
-
-        // Настройка ImageButton для отображения/скрытия пробок
-        trafficButton = view.findViewById(R.id.trafficButton);
+        ImageButton trafficButton = view.findViewById(R.id.trafficButton);
         trafficButton.setOnClickListener(v -> {
-            isTrafficVisible = !isTrafficVisible; // Переключаем состояние
-            trafficLayer.setTrafficVisible(isTrafficVisible); // Обновляем слой пробок
-
-            // Меняем иконку в зависимости от состояния
-            if (isTrafficVisible) {
-                trafficButton.setImageResource(R.drawable.trafficlightcolor); // Иконка "пробки включены"
-            } else {
-                trafficButton.setImageResource(R.drawable.trafficlight); // Иконка "пробки выключены"
-            }
+            boolean newState = !trafficLayer.isTrafficVisible();
+            trafficLayer.setTrafficVisible(newState);
+            trafficButton.setImageResource(
+                    newState ? R.drawable.trafficlightcolor : R.drawable.trafficlight
+            );
         });
 
         return view;
     }
+
+    private final MapObjectTapListener universalTapListener = (mapObject, point) -> {
+        GasStationInfo info = markersData.get(mapObject);
+        if (info != null) {
+            showGasStationInfo(info);
+        }
+        return true;
+    };
 
     private List<BoundingBox> getRussianRegions() {
         List<com.yandex.mapkit.geometry.BoundingBox> regions = new ArrayList<>();
@@ -142,86 +148,126 @@ public class GasFragment extends Fragment {
     }
 
     private void searchGasStations() {
-        List<com.yandex.mapkit.geometry.BoundingBox> regions = getRussianRegions();
+        List<BoundingBox> regions = getRussianRegions();
 
-        for (com.yandex.mapkit.geometry.BoundingBox region : regions) {
-            Session searchSession = searchManager.submit(
-                    "АЗС", // Поисковый запрос
-                    Geometry.fromBoundingBox(region),     // Границы региона
-                    new SearchOptions(), // Дополнительные параметры поиска
+        for (BoundingBox region : regions) {
+            searchManager.submit(
+                    "АЗС",
+                    Geometry.fromBoundingBox(region),
+                    new SearchOptions(),
                     new Session.SearchListener() {
                         @Override
                         public void onSearchResponse(@NonNull Response response) {
-                            // Обработка результатов поиска
-                            response.getCollection().getChildren().forEach(item -> {
-                                Point point = item.getObj().getGeometry().get(0).getPoint();
+                            for (int i = 0; i < response.getCollection().getChildren().size(); i++) {
+                                Point point = response.getCollection().getChildren().get(i).getObj().getGeometry().get(0).getPoint();
                                 if (point != null) {
-                                    // Получение имени объекта
-                                    String name = item.getObj().getName();
-                                    String address = item.getObj().getDescriptionText();
+                                    // Создаем Map с ценами (в реальном приложении эти данные можно получать из API)
+                                    Map<String, Double> fuelPrices = new HashMap<>();
+                                    fuelPrices.put("АИ-92", 56.49 + (Math.random() * 5));
+                                    fuelPrices.put("АИ-95", 60.37 + (Math.random() * 5));
+                                    fuelPrices.put("АИ-98", 70.41 + (Math.random() * 5));
+                                    fuelPrices.put("ДТ", 70.62 + (Math.random() * 5));
 
-                                    // Создаем объект GasStationInfo для хранения данных о заправке
-                                    GasStationInfo gasStationInfo = new GasStationInfo(name, address);
+                                    // Создаем объект с полной информацией
+                                    GasStationInfo info = new GasStationInfo(
+                                            response.getCollection().getChildren().get(i).getObj().getName(),
+                                            response.getCollection().getChildren().get(i).getObj().getDescriptionText(),
+                                            fuelPrices,
+                                            4 + 2 * (int)(Math.random() * 3), // Случайное число колонок (2-12)
+                                            Math.round((3.7 + Math.random() * 1.3) * 10) / 10.0 // Рейтинг 3.0-5.0
+                                    );
 
-                                    // Добавление маркера на карту
                                     MapObject marker = mapObjects.addPlacemark(
                                             point,
-                                            ImageProvider.fromResource(requireContext(), R.drawable.station) // Стандартная иконка
+                                            ImageProvider.fromResource(requireContext(), R.drawable.station)
                                     );
-                                    marker.setUserData(gasStationInfo); // Сохраняем данные о заправке
 
-                                    // Добавляем обработчик кликов на маркер
-                                    marker.addTapListener(new MapObjectTapListener() {
-                                        @Override
-                                        public boolean onMapObjectTap(@NonNull MapObject mapObject, @NonNull Point point) {
-                                            // Получаем данные о заправке
-                                            GasStationInfo gasStationInfo = (GasStationInfo) mapObject.getUserData();
-
-                                            // Отображаем информацию о заправке в AlertDialog
-                                            if (gasStationInfo != null) {
-                                                showGasStationInfo(gasStationInfo);
-                                            }
-                                            return true; // Возвращаем true, чтобы событие не передавалось дальше
-                                        }
-                                    });
-
-                                    // Логирование для отладки
-                                    Log.d("GasFragment", "Marker added: " + gasStationInfo.getName() + " at " + point);
+                                    markersData.put(marker, info);
+                                    marker.addTapListener(universalTapListener);
                                 }
-                            });
+                            }
                         }
 
                         @Override
                         public void onSearchError(@NonNull Error error) {
-                            // Обработка ошибки поиска
-                            error.isValid();
+                            Log.e("GasFragment", "Ошибка поиска: " + error);
                         }
                     }
             );
         }
     }
 
-    private void showGasStationInfo(GasStationInfo gasStationInfo) {
-        // Создаем AlertDialog для отображения информации о заправке
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Информация о заправке");
-        builder.setMessage(
-                "Название: " + gasStationInfo.getName() + "\n" +
-                        "Адрес: " + gasStationInfo.getAddress()
-        );
-        builder.setPositiveButton("ОК", (dialog, which) -> dialog.dismiss()); // Кнопка "ОК"
-        builder.setCancelable(true); // Возможность закрыть диалог
+    private void showGasStationInfo(GasStationInfo info) {
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.gas_station_info, null);
 
-        // Показываем диалог
-        AlertDialog dialog = builder.create();
-        dialog.show();
+        TextView title = dialogView.findViewById(R.id.title);
+        TextView address = dialogView.findViewById(R.id.address);
+        TextView pumps = dialogView.findViewById(R.id.pumps);
+        RatingBar rating = dialogView.findViewById(R.id.rating);
+        TextView ratingText = dialogView.findViewById(R.id.ratingText);
+        TextView prices = dialogView.findViewById(R.id.prices);
+
+        title.setText(info.getName());
+        address.setText(info.getAddress());
+        pumps.setText(getString(R.string.pumps_count, info.getPumpsCount()));
+        rating.setRating((float) info.getRating());
+        ratingText.setText(String.format(Locale.getDefault(), "%.1f/5", info.getRating()));
+
+        StringBuilder pricesText = new StringBuilder("Цены:\n");
+        for (Map.Entry<String, Double> entry : info.getFuelPrices().entrySet()) {
+            pricesText.append("• ")
+                    .append(entry.getKey())
+                    .append(": ")
+                    .append(String.format(Locale.getDefault(), "%.2f ₽", entry.getValue()))
+                    .append("\n");
+        }
+        prices.setText(pricesText.toString());
+
+        AlertDialog dialog = new AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                .setView(dialogView)
+                .setPositiveButton("Закрыть", null)
+                .show();
+
+        // Стилизация кнопок
+        Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        positiveButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorAccent));
+
     }
+    private void centerOnStation(GasStationInfo info) {
+        for (Map.Entry<MapObject, GasStationInfo> entry : markersData.entrySet()) {
+            if (entry.getValue().equals(info)) {
+                mapView.getMap().move(
+                        new CameraPosition(),
+                        new Animation(Animation.Type.SMOOTH, 1f),
+                        null
+                );
+                break;
+            }
+        }
+    }
+
+    // Метод для преобразования рейтинга в звездочки
+    private String getRatingStars(double rating) {
+        int fullStars = (int) rating;
+        boolean hasHalfStar = (rating - fullStars) >= 0.5;
+
+        StringBuilder stars = new StringBuilder();
+        for (int i = 0; i < fullStars; i++) {
+            stars.append("★");
+        }
+        if (hasHalfStar) {
+            stars.append("½");
+        }
+        return stars.toString();
+    }
+
 
     @Override
     public void onStart() {
         super.onStart();
-        mapView.onStart();
         MapKitFactory.getInstance().onStart();
+        mapView.onStart();
     }
 
     @Override
@@ -234,6 +280,8 @@ public class GasFragment extends Fragment {
     @Override
     public void onDestroyView() {
         if (mapView != null) {
+            mapObjects.clear();
+            markersData.clear();
             mapView.onFinishTemporaryDetach();
         }
         super.onDestroyView();
@@ -243,18 +291,35 @@ public class GasFragment extends Fragment {
     private static class GasStationInfo {
         private final String name;
         private final String address;
+        private final Map<String, Double> fuelPrices; // Тип топлива -> цена
+        private final int pumpsCount; // Количество колонок
+        private final double rating; // Рейтинг (0-5)
 
-        public GasStationInfo(String name, String address) {
+        public GasStationInfo(String name, String address,
+                              Map<String, Double> fuelPrices,
+                              int pumpsCount,
+                              double rating) {
             this.name = name;
             this.address = address;
+            this.fuelPrices = fuelPrices;
+            this.pumpsCount = pumpsCount;
+            this.rating = rating;
         }
 
         public String getName() {
             return name;
         }
-
         public String getAddress() {
             return address;
+        }
+        public Map<String, Double> getFuelPrices() {
+            return fuelPrices;
+        }
+        public int getPumpsCount() {
+            return pumpsCount;
+        }
+        public double getRating() {
+            return rating;
         }
     }
 }

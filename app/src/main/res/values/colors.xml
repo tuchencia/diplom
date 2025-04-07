@@ -19,6 +19,10 @@
     <color name="limit">#0E6D02</color>
     <color name="license">#043F5D</color>
     <color name="yellow">#998500</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="ratingBackground">#D3D3D3</color>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
 
 
     <!-- Основные цвета -->
