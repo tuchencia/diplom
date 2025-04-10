@@ -1,9 +1,7 @@
 package com.example.car_helper;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -18,7 +16,6 @@ import android.widget.ImageButton;
 import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.provider.Settings;
 
 
 import androidx.annotation.NonNull;
@@ -27,18 +24,19 @@ import androidx.fragment.app.Fragment;
 
 import com.yandex.mapkit.Animation;
 import com.yandex.mapkit.MapKitFactory;
+import com.yandex.mapkit.RequestPoint;
+import com.yandex.mapkit.RequestPointType;
 import com.yandex.mapkit.geometry.BoundingBox;
 import com.yandex.mapkit.geometry.Geometry;
 import com.yandex.mapkit.geometry.Point;
+import com.yandex.mapkit.geometry.Polyline;
 import com.yandex.mapkit.layers.ObjectEvent;
 import com.yandex.mapkit.location.FilteringMode;
 import com.yandex.mapkit.location.Location;
 import com.yandex.mapkit.location.LocationListener;
 import com.yandex.mapkit.location.LocationManager;
 import com.yandex.mapkit.location.LocationStatus;
-import com.yandex.mapkit.map.CameraListener;
 import com.yandex.mapkit.map.CameraPosition;
-import com.yandex.mapkit.map.CameraUpdateReason;
 import com.yandex.mapkit.map.MapObject;
 import com.yandex.mapkit.map.MapObjectCollection;
 import com.yandex.mapkit.map.MapObjectTapListener;
@@ -56,6 +54,14 @@ import com.yandex.mapkit.user_location.UserLocationObjectListener;
 import com.yandex.mapkit.user_location.UserLocationView;
 import com.yandex.runtime.Error;
 import com.yandex.runtime.image.ImageProvider;
+import com.yandex.mapkit.directions.DirectionsFactory;
+import com.yandex.mapkit.directions.driving.DrivingRoute;
+import com.yandex.mapkit.directions.driving.DrivingRouter;
+import com.yandex.mapkit.directions.driving.DrivingSession;
+import com.yandex.mapkit.directions.driving.VehicleOptions;
+import com.yandex.mapkit.directions.driving.DrivingOptions;
+import com.yandex.mapkit.map.PolylineMapObject;
+import com.yandex.mapkit.directions.driving.DrivingRouterType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,11 +76,17 @@ public class GasFragment extends Fragment {
     private TrafficLayer trafficLayer;
     private UserLocationLayer userLocationLayer;
     private PlacemarkMapObject userLocationMarker;
+    private DrivingRouter drivingRouter;
+    private DrivingSession drivingSession;
+    private PolylineMapObject routeMapObject;
+    private GasStationInfo selectedStation;
 
     private ImageButton trafficButton;
     private ImageButton locationButton;
     private ImageButton zoomInButton;
     private ImageButton zoomOutButton;
+    private ImageButton cancelRouteButton;
+    private boolean isRouteActive = false;
 
     private SearchManager searchManager;
     private LocationManager locationManager;
@@ -147,6 +159,7 @@ public class GasFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         MapKitFactory.initialize(requireContext());
         SearchFactory.initialize(requireContext());
+        DirectionsFactory.initialize(requireContext());
 
         View view = inflater.inflate(R.layout.fragment_gas, container, false);
 
@@ -166,6 +179,7 @@ public class GasFragment extends Fragment {
         locationButton = view.findViewById(R.id.locationButton);
         zoomInButton = view.findViewById(R.id.zoomInButton);
         zoomOutButton = view.findViewById(R.id.zoomOutButton);
+        cancelRouteButton = view.findViewById(R.id.cancelRouteButton);
     }
 
     private void setupMap() {
@@ -175,6 +189,7 @@ public class GasFragment extends Fragment {
                 null
         );
 
+        drivingRouter = DirectionsFactory.getInstance().createDrivingRouter(DrivingRouterType.COMBINED);
         mapObjects = mapView.getMap().getMapObjects().addCollection();
         trafficLayer = MapKitFactory.getInstance().createTrafficLayer(mapView.getMapWindow());
         searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.ONLINE);
@@ -223,6 +238,7 @@ public class GasFragment extends Fragment {
 
         zoomInButton.setOnClickListener(v -> zoomIn());
         zoomOutButton.setOnClickListener(v -> zoomOut());
+        cancelRouteButton.setOnClickListener(v -> clearRoute());
     }
     private void requestLocation(){
         shouldCenterOnLocation = true;
@@ -438,7 +454,9 @@ public class GasFragment extends Fragment {
                 response.getCollection().getChildren().get(index).getObj().getDescriptionText(),
                 fuelPrices,
                 4 + 2 * (int)(Math.random() * 3), // 4, 6 или 8 колонок
-                Math.round((3.7 + Math.random() * 1.3) * 10) / 10.0 // Рейтинг 3.7-5.0
+                Math.round((3.7 + Math.random() * 1.3) * 10) / 10.0, // Рейтинг 3.7-5.0
+                point.getLatitude(),
+                point.getLongitude()
         );
 
         MapObject marker = mapObjects.addPlacemark(
@@ -450,7 +468,154 @@ public class GasFragment extends Fragment {
         marker.addTapListener(universalTapListener);
     }
 
+    private void buildRoute() {
+        if (isRouteActive) {
+            clearRoute();
+            return;
+        }
+        if (lastKnownLocation == null || selectedStation == null) {
+            Toast.makeText(requireContext(), "Не удалось определить ваше местоположение", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        clearRoute();
+
+        // Создаем точки маршрута
+        List<RequestPoint> routePoints = new ArrayList<>();
+        routePoints.add(new RequestPoint(
+                lastKnownLocation,
+                RequestPointType.WAYPOINT,
+                null, // pointContext - может быть null
+                null  // entranceInfo - может быть null
+        ));
+        routePoints.add(new RequestPoint(
+                new Point(selectedStation.getLatitude(), selectedStation.getLongitude()),
+                RequestPointType.WAYPOINT,
+                null, // pointContext - может быть null
+                null  // entranceInfo - может быть null
+        ));
+
+        DrivingOptions drivingOptions = new DrivingOptions();
+        VehicleOptions vehicleOptions = new VehicleOptions();
+
+        drivingSession = drivingRouter.requestRoutes(
+                routePoints,
+                drivingOptions,
+                vehicleOptions,
+                new DrivingSession.DrivingRouteListener() {
+                    @Override
+                    public void onDrivingRoutes(@NonNull List<DrivingRoute> routes) {
+                        if (!routes.isEmpty() && routes.get(0) != null && routes.get(0).getGeometry() != null) {
+                            showRoute(routes.get(0));
+                        } else {
+                            Toast.makeText(requireContext(),
+                                    "Не удалось построить маршрут",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onDrivingRoutesError(@NonNull Error error) {
+                        Toast.makeText(requireContext(),
+                                "Ошибка построения маршрута: " + error,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void clearRoute() {
+        if (routeMapObject != null) {
+            mapObjects.remove(routeMapObject);
+            routeMapObject = null;
+        }
+        if (drivingSession != null) {
+            drivingSession.cancel();
+            drivingSession = null;
+        }
+        isRouteActive = false;
+        cancelRouteButton.animate().alpha(0f).setDuration(300).withEndAction(() ->{
+           cancelRouteButton.setVisibility(View.GONE);
+        }).start();
+    }
+
+
+    private void showRoute(DrivingRoute route) {
+        if (route == null || route.getGeometry() == null) {
+            Toast.makeText(requireContext(), "Не удалось построить маршрут", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        clearRoute();
+
+        // Добавляем линию маршрута
+        routeMapObject = mapObjects.addPolyline(route.getGeometry());
+        routeMapObject.setStrokeColor(Color.MAGENTA);
+        routeMapObject.setStrokeWidth(5);
+
+        // Показываем время в пути
+        double timeInMinutes = route.getMetadata().getWeight().getTime().getValue() / 60.0;
+        String timeText = String.format(Locale.getDefault(), "Время в пути: %.0f мин", timeInMinutes);
+        Toast.makeText(requireContext(), timeText, Toast.LENGTH_LONG).show();
+
+        isRouteActive = true;
+        cancelRouteButton.animate().alpha(1f).setDuration(300).withStartAction(() -> {
+            cancelRouteButton.setVisibility(View.VISIBLE);
+            cancelRouteButton.setAlpha(0f);
+        }).start();
+        // Получаем точки маршрута
+        List<Point> routePoints = route.getGeometry().getPoints();
+        if (routePoints.isEmpty()) {
+            return;
+        }
+
+        // Находим минимальные и максимальные координаты
+        double minLat = routePoints.get(0).getLatitude();
+        double maxLat = routePoints.get(0).getLatitude();
+        double minLon = routePoints.get(0).getLongitude();
+        double maxLon = routePoints.get(0).getLongitude();
+
+        for (Point point : routePoints) {
+            minLat = Math.min(minLat, point.getLatitude());
+            maxLat = Math.max(maxLat, point.getLatitude());
+            minLon = Math.min(minLon, point.getLongitude());
+            maxLon = Math.max(maxLon, point.getLongitude());
+        }
+
+        // Создаем камеру для отображения всего маршрута
+        Point center = new Point(
+                (minLat + maxLat) / 2,
+                (minLon + maxLon) / 2
+        );
+
+        // Рассчитываем подходящий zoom
+        float zoom = calculateZoomLevel(minLat, maxLat, minLon, maxLon);
+
+        mapView.getMap().move(
+                new CameraPosition(center, zoom, 0.0f, 0.0f),
+                new Animation(Animation.Type.SMOOTH, 1),
+                null
+        );
+    }
+
+    private float calculateZoomLevel(double minLat, double maxLat, double minLon, double maxLon) {
+        double latDiff = maxLat - minLat;
+        double lonDiff = maxLon - minLon;
+        double maxDiff = Math.max(latDiff, lonDiff);
+
+        if (maxDiff < 0.003) return 17.0f;
+        if (maxDiff < 0.01) return 16.0f;
+        if (maxDiff < 0.03) return 15.0f;
+        if (maxDiff < 0.1) return 14.0f;
+        if (maxDiff < 0.3) return 13.0f;
+        if (maxDiff < 1.0) return 12.0f;
+        if (maxDiff < 3.0) return 11.0f;
+        if (maxDiff < 10.0) return 10.0f;
+        return 9.0f;
+    }
+
+
+
     private void showGasStationInfo(GasStationInfo info) {
+        selectedStation = info;
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.gas_station_info, null);
 
@@ -480,10 +645,15 @@ public class GasFragment extends Fragment {
         AlertDialog dialog = new AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
                 .setView(dialogView)
                 .setPositiveButton("Закрыть", null)
+                .setNeutralButton("Построить маршрут", (d, which) -> buildRoute())
                 .show();
 
         Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
         positiveButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorAccent));
+
+        Button neutralButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+        neutralButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary));
+
     }
 
     // Методы жизненного цикла
@@ -504,6 +674,7 @@ public class GasFragment extends Fragment {
     @Override
     public void onDestroyView() {
         if (mapView != null) {
+            clearRoute();
             mapObjects.clear();
             markersData.clear();
             locationManager.unsubscribe(locationListener);
@@ -519,15 +690,19 @@ public class GasFragment extends Fragment {
         private final Map<String, Double> fuelPrices;
         private final int pumpsCount;
         private final double rating;
+        private final double latitude;
+        private final double longitude;
 
         public GasStationInfo(String name, String address,
                               Map<String, Double> fuelPrices,
-                              int pumpsCount, double rating) {
+                              int pumpsCount, double rating, double latitude, double longitude) {
             this.name = name;
             this.address = address;
             this.fuelPrices = fuelPrices;
             this.pumpsCount = pumpsCount;
             this.rating = rating;
+            this.latitude = latitude;
+            this.longitude = longitude;
         }
 
         public String getName() { return name; }
@@ -535,5 +710,7 @@ public class GasFragment extends Fragment {
         public Map<String, Double> getFuelPrices() { return fuelPrices; }
         public int getPumpsCount() { return pumpsCount; }
         public double getRating() { return rating; }
+        public double getLatitude() {return latitude;}
+        public double getLongitude() {return longitude;}
     }
 }
