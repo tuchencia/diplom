@@ -366,37 +366,115 @@ public class GasFragment extends Fragment {
 
     private List<BoundingBox> getRussianRegions() {
         List<BoundingBox> regions = new ArrayList<>();
-        // Регионы поиска (как в вашем исходном коде)
-        regions.add(new BoundingBox(new Point(55.73, 37.55), new Point(55.78, 37.65))); // Центр
-        regions.add(new BoundingBox(new Point(55.82, 37.35), new Point(55.91, 37.65))); // Север
-        regions.add(new BoundingBox(new Point(55.60, 37.55), new Point(55.73, 37.75))); // Юг
-        regions.add(new BoundingBox(new Point(55.70, 37.35), new Point(55.80, 37.55))); // Запад
-        regions.add(new BoundingBox(new Point(55.70, 37.65), new Point(55.80, 37.85))); // Восток
-        regions.add(new BoundingBox(new Point(55.82, 37.35), new Point(55.91, 37.55))); // Северо-Запад
-        regions.add(new BoundingBox(new Point(55.82, 37.65), new Point(55.91, 37.85))); // Северо-Восток
-        regions.add(new BoundingBox(new Point(55.60, 37.35), new Point(55.73, 37.55))); // Юго-Запад
-        regions.add(new BoundingBox(new Point(55.60, 37.65), new Point(55.73, 37.85))); // Юго-Восток
-        regions.add(new BoundingBox(new Point(55.73, 37.55), new Point(55.78, 37.65))); // Центральный округ
-        regions.add(new BoundingBox(new Point(55.82, 37.35), new Point(55.91, 37.65))); // Северный округ
-        regions.add(new BoundingBox(new Point(55.60, 37.55), new Point(55.73, 37.75))); // Южный округ
-        regions.add(new BoundingBox(new Point(55.70, 37.35), new Point(55.80, 37.55))); // Западный округ
-        regions.add(new BoundingBox(new Point(55.70, 37.65), new Point(55.80, 37.85))); // Восточный округ
-        regions.add(new BoundingBox(new Point(55.82, 37.35), new Point(55.91, 37.55))); // Северо-Западный округ
-        regions.add(new BoundingBox(new Point(55.82, 37.65), new Point(55.91, 37.85))); // Северо-Восточный округ
-        regions.add(new BoundingBox(new Point(55.60, 37.35), new Point(55.73, 37.55))); // Юго-Западный округ
-        regions.add(new BoundingBox(new Point(55.60, 37.65), new Point(55.73, 37.85))); // Юго-Восточный округ
-        regions.add(new BoundingBox(new Point(55.73, 37.55), new Point(55.78, 37.65))); // Центральный район
-        regions.add(new BoundingBox(new Point(55.82, 37.35), new Point(55.91, 37.65))); // Северный район
+        // Центральный административный округ (разбит на 9 секторов)
+        regions.add(new BoundingBox(new Point(55.75, 37.58), new Point(55.78, 37.65)));  // Кремль-Китай-город
+        regions.add(new BoundingBox(new Point(55.75, 37.52), new Point(55.78, 37.58)));  // Тверская-Пушкинская
+        regions.add(new BoundingBox(new Point(55.75, 37.45), new Point(55.78, 37.52)));  // Арбат-Смоленская
+        regions.add(new BoundingBox(new Point(55.72, 37.58), new Point(55.75, 37.65)));  // Таганка-Яузская
+        regions.add(new BoundingBox(new Point(55.72, 37.52), new Point(55.75, 37.58)));  // Чистые пруды
+        regions.add(new BoundingBox(new Point(55.72, 37.45), new Point(55.75, 37.52)));  // Хамовники
+        regions.add(new BoundingBox(new Point(55.68, 37.58), new Point(55.72, 37.65)));  // Павелецкая
+        regions.add(new BoundingBox(new Point(55.68, 37.52), new Point(55.72, 37.58)));  // Серпуховская
+        regions.add(new BoundingBox(new Point(55.68, 37.45), new Point(55.72, 37.52)));  // Ленинский проспект
 
-        // Московская область (8 участков)
-        regions.add(new BoundingBox(new Point(55.91, 36.80), new Point(56.50, 38.00))); // Север
-        regions.add(new BoundingBox(new Point(54.80, 37.00), new Point(55.60, 39.00))); // Юг
-        regions.add(new BoundingBox(new Point(55.50, 36.00), new Point(56.00, 37.50))); // Запад
-        regions.add(new BoundingBox(new Point(55.50, 38.00), new Point(56.00, 39.50))); // Восток
-        regions.add(new BoundingBox(new Point(55.91, 36.80), new Point(56.50, 37.50))); // Северо-Запад
-        regions.add(new BoundingBox(new Point(55.91, 37.50), new Point(56.50, 38.00))); // Северо-Восток
-        regions.add(new BoundingBox(new Point(54.80, 36.80), new Point(55.60, 37.50))); // Юго-Запад
-        regions.add(new BoundingBox(new Point(54.80, 37.50), new Point(55.60, 39.00))); // Юго-Восток
+        // Северные округа (САО и СВАО)
+        for (double lat = 55.78; lat <= 56.00; lat += 0.04) {
+            for (double lon = 37.35; lon <= 37.75; lon += 0.06) {
+                regions.add(new BoundingBox(
+                        new Point(lat, lon),
+                        new Point(lat + 0.04, lon + 0.06)
+                ));
+            }
+        }
+
+        // Восточные округа (ВАО)
+        for (double lat = 55.70; lat <= 55.85; lat += 0.05) {
+            for (double lon = 37.65; lon <= 38.10; lon += 0.08) {
+                regions.add(new BoundingBox(
+                        new Point(lat, lon),
+                        new Point(lat + 0.05, lon + 0.08)
+                ));
+            }
+        }
+
+        // Южные округа (ЮАО, ЮВАО, ЮЗАО)
+        for (double lat = 55.55; lat <= 55.75; lat += 0.05) {
+            for (double lon = 37.35; lon <= 37.90; lon += 0.08) {
+                regions.add(new BoundingBox(
+                        new Point(lat, lon),
+                        new Point(lat + 0.05, lon + 0.08)
+                ));
+            }
+        }
+
+        // Западные округа (ЗАО, СЗАО)
+        for (double lat = 55.70; lat <= 55.85; lat += 0.05) {
+            for (double lon = 37.30; lon <= 37.55; lon += 0.07) {
+                regions.add(new BoundingBox(
+                        new Point(lat, lon),
+                        new Point(lat + 0.05, lon + 0.07)
+                ));
+            }
+        }
+
+        // Ближнее Подмосковье (в радиусе 30 км от МКАД)
+        // Северное направление
+        regions.addAll(createSector(56.00, 37.20, 56.40, 37.80, 0.08, 0.12));
+
+        // Северо-Восточное направление
+        regions.addAll(createSector(55.95, 37.80, 56.30, 38.40, 0.08, 0.12));
+
+        // Восточное направление
+        regions.addAll(createSector(55.60, 38.00, 55.95, 38.80, 0.07, 0.10));
+
+        // Юго-Восточное направление
+        regions.addAll(createSector(55.40, 37.80, 55.70, 38.40, 0.07, 0.10));
+
+        // Южное направление
+        regions.addAll(createSector(55.20, 37.40, 55.60, 37.90, 0.07, 0.10));
+
+        // Юго-Западное направление
+        regions.addAll(createSector(55.20, 37.10, 55.60, 37.50, 0.07, 0.10));
+
+        // Западное направление
+        regions.addAll(createSector(55.60, 36.80, 55.95, 37.40, 0.08, 0.12));
+
+        // Северо-Западное направление
+        regions.addAll(createSector(55.90, 36.80, 56.30, 37.40, 0.08, 0.12));
+
+        // Крупные города-спутники (дополнительное покрытие)
+        String[] cities = {
+                "55.72,37.30,55.78,37.40",  // Красногорск
+                "55.66,37.20,55.72,37.30",  // Одинцово
+                "55.57,37.45,55.63,37.55",  // Видное
+                "55.55,37.20,55.61,37.30",  // Коммунарка
+                "55.90,37.70,55.96,37.80",  // Мытищи
+                "55.92,37.80,55.98,37.90",  // Королёв
+                "55.70,37.85,55.76,37.95",  // Люберцы
+                "55.60,37.75,55.66,37.85",  // Жуковский
+                "55.50,37.70,55.56,37.80",  // Раменское
+                "56.10,37.10,56.16,37.20"   // Пушкино
+        };
+
+        for (String city : cities) {
+            String[] coords = city.split(",");
+            regions.add(new BoundingBox(
+                    new Point(Double.parseDouble(coords[0]), Double.parseDouble(coords[1])),
+                    new Point(Double.parseDouble(coords[2]), Double.parseDouble(coords[3]))
+            ));
+        }
+        regions.add(new BoundingBox(new Point(55.692, 37.590), new Point(55.704, 37.610)));  // Донской-1 (м. Шаболовская)
+        regions.add(new BoundingBox(new Point(55.704, 37.590), new Point(55.716, 37.610)));  // Донской-2 (м. Ленинский проспект)
+        regions.add(new BoundingBox(new Point(55.692, 37.570), new Point(55.704, 37.590)));  // Донской-3 (м. Тульская)
+        regions.add(new BoundingBox(new Point(55.704, 37.570), new Point(55.716, 37.590)));  // Донской-4 (м. Нагорная)
+        regions.add(new BoundingBox(new Point(55.680, 37.590), new Point(55.692, 37.610)));  // Донской-5 (м. Верхние Котлы)
+        regions.add(new BoundingBox(new Point(55.716, 37.570), new Point(55.728, 37.600)));  // Донской-6 (район ЗИЛ)
+
+        // Особые точки в Донском районе
+        regions.add(new BoundingBox(new Point(55.700, 37.605), new Point(55.710, 37.615)));  // Район МИСиС
+        regions.add(new BoundingBox(new Point(55.695, 37.575), new Point(55.705, 37.585)));  // ТЦ Рио
+        regions.add(new BoundingBox(new Point(55.710, 37.580), new Point(55.720, 37.590)));  // Парк Горького (южная часть)
+        regions.add(new BoundingBox(new Point(55.685, 37.595), new Point(55.695, 37.605)));  // Набережная Москвы-реки
 
         // Города-миллионники
         regions.add(new BoundingBox(new Point(59.80, 30.15), new Point(60.05, 30.50))); // Санкт-Петербург
@@ -412,6 +490,21 @@ public class GasFragment extends Fragment {
 
         regions.add(new BoundingBox(new Point(55.4, 36.5), new Point(55.9, 38.5))); // Весь регион
         return regions;
+    }
+    private List<BoundingBox> createSector(double minLat, double minLon,
+                                           double maxLat, double maxLon,
+                                           double latStep, double lonStep) {
+        List<BoundingBox> sector = new ArrayList<>();
+        for (double lat = minLat; lat < maxLat; lat += latStep) {
+            for (double lon = minLon; lon < maxLon; lon += lonStep) {
+                sector.add(new BoundingBox(
+                        new Point(lat, lon),
+                        new Point(Math.min(lat + latStep, maxLat),
+                                Math.min(lon + lonStep, maxLon))
+                ));
+            }
+        }
+        return sector;
     }
 
     private void searchGasStations() {
@@ -548,7 +641,7 @@ public class GasFragment extends Fragment {
 
         // Добавляем линию маршрута
         routeMapObject = mapObjects.addPolyline(route.getGeometry());
-        routeMapObject.setStrokeColor(Color.MAGENTA);
+        routeMapObject.setStrokeColor(Color.BLUE);
         routeMapObject.setStrokeWidth(5);
 
         // Показываем время в пути
