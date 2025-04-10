@@ -1,6 +1,13 @@
 package com.example.car_helper;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.PointF;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -10,6 +17,9 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.RatingBar;
 import android.widget.TextView;
+import android.widget.Toast;
+import android.provider.Settings;
+
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -20,10 +30,19 @@ import com.yandex.mapkit.MapKitFactory;
 import com.yandex.mapkit.geometry.BoundingBox;
 import com.yandex.mapkit.geometry.Geometry;
 import com.yandex.mapkit.geometry.Point;
+import com.yandex.mapkit.layers.ObjectEvent;
+import com.yandex.mapkit.location.FilteringMode;
+import com.yandex.mapkit.location.Location;
+import com.yandex.mapkit.location.LocationListener;
+import com.yandex.mapkit.location.LocationManager;
+import com.yandex.mapkit.location.LocationStatus;
+import com.yandex.mapkit.map.CameraListener;
 import com.yandex.mapkit.map.CameraPosition;
+import com.yandex.mapkit.map.CameraUpdateReason;
 import com.yandex.mapkit.map.MapObject;
 import com.yandex.mapkit.map.MapObjectCollection;
 import com.yandex.mapkit.map.MapObjectTapListener;
+import com.yandex.mapkit.map.PlacemarkMapObject;
 import com.yandex.mapkit.mapview.MapView;
 import com.yandex.mapkit.search.Response;
 import com.yandex.mapkit.search.SearchFactory;
@@ -32,6 +51,9 @@ import com.yandex.mapkit.search.SearchManagerType;
 import com.yandex.mapkit.search.SearchOptions;
 import com.yandex.mapkit.search.Session;
 import com.yandex.mapkit.traffic.TrafficLayer;
+import com.yandex.mapkit.user_location.UserLocationLayer;
+import com.yandex.mapkit.user_location.UserLocationObjectListener;
+import com.yandex.mapkit.user_location.UserLocationView;
 import com.yandex.runtime.Error;
 import com.yandex.runtime.image.ImageProvider;
 
@@ -43,51 +65,75 @@ import java.util.Map;
 
 public class GasFragment extends Fragment {
 
-    private MapView mapView; // Карта
-    private Session searchSession;
-    private MapObjectCollection mapObjects; // Объекты карты (маркеры)
-    private SearchManager searchManager; // Менеджер поиска
-    private TrafficLayer trafficLayer; // Слой пробок
-    private ImageButton trafficButton; // Кнопка для управления пробками
-    private boolean isTrafficVisible = false; // Флаг для отслеживания состояния пробок
+    private MapView mapView;
+    private MapObjectCollection mapObjects;
+    private TrafficLayer trafficLayer;
+    private UserLocationLayer userLocationLayer;
+    private PlacemarkMapObject userLocationMarker;
+
+    private ImageButton trafficButton;
+    private ImageButton locationButton;
+    private ImageButton zoomInButton;
+    private ImageButton zoomOutButton;
+
+    private SearchManager searchManager;
+    private LocationManager locationManager;
     private final Map<MapObject, GasStationInfo> markersData = new HashMap<>();
-    private static final String API_KEY = "4d462aaf-4063-4ad4-881e-91421919792b"; // Замените на ваш API-ключ
 
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        MapKitFactory.initialize(requireContext());
-        SearchFactory.initialize(requireContext());
+    private boolean isTrafficVisible = false;
+    private boolean isLocationActive = false;
+    private Point lastKnownLocation;
+    private boolean shouldCenterOnLocation = false;
 
-        View view = inflater.inflate(R.layout.fragment_gas, container, false);
-        mapView = view.findViewById(R.id.mapView);
+    private final LocationListener locationListener = new LocationListener() {
+        @Override
+        public void onLocationUpdated(@NonNull Location location) {
+            lastKnownLocation = location.getPosition();
+            if (shouldCenterOnLocation) {
+                centerUserLocation();
+                updateUserMarker();
+                shouldCenterOnLocation = false;
+                setLocationActive(false);
+            }
+        }
 
-        // Настройка начальной позиции карты
-        mapView.getMap().move(
-                new CameraPosition(new Point(55.7558, 37.6173), 12.5f, 0.0f, 0.0f),
-                new Animation(Animation.Type.SMOOTH, 2),
-                null
-        );
+        @Override
+        public void onLocationStatusUpdated(@NonNull LocationStatus locationStatus) {
+            if (locationStatus == LocationStatus.NOT_AVAILABLE) {
+                Toast.makeText(requireContext(), "Местоположение недоступно", Toast.LENGTH_SHORT).show();
+                showLocationDisabledWarning();
+                setLocationActive(false);
+            }
+        }
+    };
 
-        // Инициализация менеджера поиска
-        searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.ONLINE);
-        mapObjects = mapView.getMap().getMapObjects().addCollection();
-
-        // Поиск АЗС
-        searchGasStations();
-
-        // Настройка пробок
-        trafficLayer = MapKitFactory.getInstance().createTrafficLayer(mapView.getMapWindow());
-        ImageButton trafficButton = view.findViewById(R.id.trafficButton);
-        trafficButton.setOnClickListener(v -> {
-            boolean newState = !trafficLayer.isTrafficVisible();
-            trafficLayer.setTrafficVisible(newState);
-            trafficButton.setImageResource(
-                    newState ? R.drawable.trafficlightcolor : R.drawable.trafficlight
+    private void updateUserMarker() {
+        if (lastKnownLocation != null) {
+            if (userLocationMarker != null) {
+                mapObjects.remove(userLocationMarker);
+            }
+            userLocationMarker = mapObjects.addPlacemark(
+                    lastKnownLocation,
+                    ImageProvider.fromResource(requireContext(), R.drawable.navigation)
             );
-        });
-
-        return view;
+        }
     }
+
+    private void showLocationDisabledWarning() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Геолокация отключена")
+                .setMessage("Включите геолокацию в настройках устройства")
+                .setPositiveButton("Настройки", (d, w) -> openLocationSettings())
+                .setNegativeButton("Отмена", null)
+                .show();
+    }
+
+    private void openLocationSettings() {
+        Intent intent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+        startActivity(intent);
+    }
+
+
 
     private final MapObjectTapListener universalTapListener = (mapObject, point) -> {
         GasStationInfo info = markersData.get(mapObject);
@@ -97,9 +143,214 @@ public class GasFragment extends Fragment {
         return true;
     };
 
-    private List<BoundingBox> getRussianRegions() {
-        List<com.yandex.mapkit.geometry.BoundingBox> regions = new ArrayList<>();
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        MapKitFactory.initialize(requireContext());
+        SearchFactory.initialize(requireContext());
 
+        View view = inflater.inflate(R.layout.fragment_gas, container, false);
+
+        initViews(view);
+        setupMap();
+        setupUserLocationLayer();
+        setupButtons();
+
+        searchGasStations();
+
+        return view;
+    }
+
+    private void initViews(View view) {
+        mapView = view.findViewById(R.id.mapView);
+        trafficButton = view.findViewById(R.id.trafficButton);
+        locationButton = view.findViewById(R.id.locationButton);
+        zoomInButton = view.findViewById(R.id.zoomInButton);
+        zoomOutButton = view.findViewById(R.id.zoomOutButton);
+    }
+
+    private void setupMap() {
+        mapView.getMap().move(
+                new CameraPosition(new Point(55.7558, 37.6173), 12.5f, 0.0f, 0.0f),
+                new Animation(Animation.Type.SMOOTH, 2),
+                null
+        );
+
+        mapObjects = mapView.getMap().getMapObjects().addCollection();
+        trafficLayer = MapKitFactory.getInstance().createTrafficLayer(mapView.getMapWindow());
+        searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.ONLINE);
+        locationManager = MapKitFactory.getInstance().createLocationManager();
+    }
+
+    private void setupUserLocationLayer() {
+        userLocationLayer = MapKitFactory.getInstance().createUserLocationLayer(mapView.getMapWindow());
+        userLocationLayer.setVisible(true);
+        userLocationLayer.setHeadingEnabled(true);
+
+        userLocationLayer.setObjectListener(new UserLocationObjectListener() {
+            @Override
+            public void onObjectAdded(UserLocationView userLocationView) {
+                userLocationView.getArrow().setIcon(ImageProvider.fromResource(requireContext(), R.drawable.navigation));
+                userLocationView.getAccuracyCircle().setFillColor(0x5500FF00);
+                centerUserLocation();
+            }
+
+            @Override
+            public void onObjectRemoved(UserLocationView userLocationView) {}
+
+            @Override
+            public void onObjectUpdated(@NonNull UserLocationView userLocationView, @NonNull ObjectEvent objectEvent) {}
+        });
+
+        updateUserLocationAnchor();
+    }
+
+    private void setupButtons() {
+        trafficButton.setOnClickListener(v -> toggleTraffic());
+
+        locationButton.setOnClickListener(v -> {
+            if (isLocationActive) {
+                setLocationActive(false);
+            }
+            else {
+                if (checkLocationPermission()) {
+                    requestLocation();
+                }
+                else {
+                    showLocationDisabledWarning();
+                }
+            }
+        });
+
+        zoomInButton.setOnClickListener(v -> zoomIn());
+        zoomOutButton.setOnClickListener(v -> zoomOut());
+    }
+    private void requestLocation(){
+        shouldCenterOnLocation = true;
+        setLocationActive(true);
+
+    }
+
+    private void zoomIn() {
+        float currentZoom = mapView.getMap().getCameraPosition().getZoom();
+        mapView.getMap().move(
+                new CameraPosition(
+                        mapView.getMap().getCameraPosition().getTarget(),
+                        currentZoom + 1,
+                        0.0f,
+                        0.0f
+                ),
+                new Animation(Animation.Type.SMOOTH, 0.3f),
+                null
+        );
+    }
+
+    private void zoomOut() {
+        float currentZoom = mapView.getMap().getCameraPosition().getZoom();
+        mapView.getMap().move(
+                new CameraPosition(
+                        mapView.getMap().getCameraPosition().getTarget(),
+                        currentZoom - 1,
+                        0.0f,
+                        0.0f
+                ),
+                new Animation(Animation.Type.SMOOTH, 0.3f),
+                null
+        );
+    }
+
+    private boolean checkLocationPermission() {
+        if (ContextCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        } else {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            return false;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            requestLocation();
+        } else {
+            Toast.makeText(requireContext(),
+                    "Для определения местоположения необходимо разрешение",
+                    Toast.LENGTH_SHORT).show();
+            setLocationActive(false);
+        }
+    }
+
+    private void showGpsEnableDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Включить GPS")
+                .setMessage("Для точного определения местоположения включите GPS")
+                .setPositiveButton("Настройки", (dialog, which) -> {
+                    startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                })
+                .setNegativeButton("Отмена", null)
+                .show();
+    }
+
+    private void toggleTraffic() {
+        isTrafficVisible = !isTrafficVisible;
+        trafficLayer.setTrafficVisible(isTrafficVisible);
+        trafficButton.setImageResource(
+                isTrafficVisible ? R.drawable.trafficlightcolor : R.drawable.trafficlight
+        );
+    }
+
+    private void toggleLocation() {
+        setLocationActive(!isLocationActive);
+    }
+
+    private void setLocationActive(boolean active) {
+        isLocationActive = active;
+        userLocationLayer.setVisible(active);
+        locationButton.setImageResource(
+                active ? R.drawable.locationon : R.drawable.locationoff
+        );
+
+        if (active) {
+            locationManager.subscribeForLocationUpdates(0, 0, 0, true,
+                    FilteringMode.ON, locationListener);
+
+            if (lastKnownLocation != null) {
+                mapView.getMap().move(
+                        new CameraPosition(lastKnownLocation, 15.0f, 0.0f, 0.0f),
+                        new Animation(Animation.Type.SMOOTH, 1f),
+                        null
+                );
+            }
+        } else {
+            locationManager.unsubscribe(locationListener);
+        }
+    }
+
+    private void centerUserLocation() {
+        if (lastKnownLocation != null) {
+            mapView.getMap().move(
+                    new CameraPosition(lastKnownLocation, 15f, 0f, 0f),
+                    new Animation(Animation.Type.SMOOTH, 0.5f),
+                    null
+            );
+        }
+    }
+
+    private void updateUserLocationAnchor() {
+        float centerX = mapView.getWidth() / 2f;
+        float centerY = mapView.getHeight() / 2f;
+        float offsetY = mapView.getHeight() * 0.15f;
+
+        userLocationLayer.setAnchor(
+                new PointF(centerX, centerY - offsetY),
+                new PointF(centerX, centerY - offsetY)
+        );
+    }
+
+    private List<BoundingBox> getRussianRegions() {
+        List<BoundingBox> regions = new ArrayList<>();
+        // Регионы поиска (как в вашем исходном коде)
         regions.add(new BoundingBox(new Point(55.73, 37.55), new Point(55.78, 37.65))); // Центр
         regions.add(new BoundingBox(new Point(55.82, 37.35), new Point(55.91, 37.65))); // Север
         regions.add(new BoundingBox(new Point(55.60, 37.55), new Point(55.73, 37.75))); // Юг
@@ -161,29 +412,7 @@ public class GasFragment extends Fragment {
                             for (int i = 0; i < response.getCollection().getChildren().size(); i++) {
                                 Point point = response.getCollection().getChildren().get(i).getObj().getGeometry().get(0).getPoint();
                                 if (point != null) {
-                                    // Создаем Map с ценами (в реальном приложении эти данные можно получать из API)
-                                    Map<String, Double> fuelPrices = new HashMap<>();
-                                    fuelPrices.put("АИ-92", 56.49 + (Math.random() * 5));
-                                    fuelPrices.put("АИ-95", 60.37 + (Math.random() * 5));
-                                    fuelPrices.put("АИ-98", 70.41 + (Math.random() * 5));
-                                    fuelPrices.put("ДТ", 70.62 + (Math.random() * 5));
-
-                                    // Создаем объект с полной информацией
-                                    GasStationInfo info = new GasStationInfo(
-                                            response.getCollection().getChildren().get(i).getObj().getName(),
-                                            response.getCollection().getChildren().get(i).getObj().getDescriptionText(),
-                                            fuelPrices,
-                                            4 + 2 * (int)(Math.random() * 3), // Случайное число колонок (2-12)
-                                            Math.round((3.7 + Math.random() * 1.3) * 10) / 10.0 // Рейтинг 3.0-5.0
-                                    );
-
-                                    MapObject marker = mapObjects.addPlacemark(
-                                            point,
-                                            ImageProvider.fromResource(requireContext(), R.drawable.station)
-                                    );
-
-                                    markersData.put(marker, info);
-                                    marker.addTapListener(universalTapListener);
+                                    addGasStationMarker(response, i, point);
                                 }
                             }
                         }
@@ -195,6 +424,30 @@ public class GasFragment extends Fragment {
                     }
             );
         }
+    }
+
+    private void addGasStationMarker(Response response, int index, Point point) {
+        Map<String, Double> fuelPrices = new HashMap<>();
+        fuelPrices.put("АИ-92", 56.49 + (Math.random() * 5));
+        fuelPrices.put("АИ-95", 60.37 + (Math.random() * 5));
+        fuelPrices.put("АИ-98", 70.41 + (Math.random() * 5));
+        fuelPrices.put("ДТ", 70.62 + (Math.random() * 5));
+
+        GasStationInfo info = new GasStationInfo(
+                response.getCollection().getChildren().get(index).getObj().getName(),
+                response.getCollection().getChildren().get(index).getObj().getDescriptionText(),
+                fuelPrices,
+                4 + 2 * (int)(Math.random() * 3), // 4, 6 или 8 колонок
+                Math.round((3.7 + Math.random() * 1.3) * 10) / 10.0 // Рейтинг 3.7-5.0
+        );
+
+        MapObject marker = mapObjects.addPlacemark(
+                point,
+                ImageProvider.fromResource(requireContext(), R.drawable.station)
+        );
+
+        markersData.put(marker, info);
+        marker.addTapListener(universalTapListener);
     }
 
     private void showGasStationInfo(GasStationInfo info) {
@@ -229,40 +482,11 @@ public class GasFragment extends Fragment {
                 .setPositiveButton("Закрыть", null)
                 .show();
 
-        // Стилизация кнопок
         Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
         positiveButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorAccent));
-
-    }
-    private void centerOnStation(GasStationInfo info) {
-        for (Map.Entry<MapObject, GasStationInfo> entry : markersData.entrySet()) {
-            if (entry.getValue().equals(info)) {
-                mapView.getMap().move(
-                        new CameraPosition(),
-                        new Animation(Animation.Type.SMOOTH, 1f),
-                        null
-                );
-                break;
-            }
-        }
     }
 
-    // Метод для преобразования рейтинга в звездочки
-    private String getRatingStars(double rating) {
-        int fullStars = (int) rating;
-        boolean hasHalfStar = (rating - fullStars) >= 0.5;
-
-        StringBuilder stars = new StringBuilder();
-        for (int i = 0; i < fullStars; i++) {
-            stars.append("★");
-        }
-        if (hasHalfStar) {
-            stars.append("½");
-        }
-        return stars.toString();
-    }
-
-
+    // Методы жизненного цикла
     @Override
     public void onStart() {
         super.onStart();
@@ -282,6 +506,7 @@ public class GasFragment extends Fragment {
         if (mapView != null) {
             mapObjects.clear();
             markersData.clear();
+            locationManager.unsubscribe(locationListener);
             mapView.onFinishTemporaryDetach();
         }
         super.onDestroyView();
@@ -291,14 +516,13 @@ public class GasFragment extends Fragment {
     private static class GasStationInfo {
         private final String name;
         private final String address;
-        private final Map<String, Double> fuelPrices; // Тип топлива -> цена
-        private final int pumpsCount; // Количество колонок
-        private final double rating; // Рейтинг (0-5)
+        private final Map<String, Double> fuelPrices;
+        private final int pumpsCount;
+        private final double rating;
 
         public GasStationInfo(String name, String address,
                               Map<String, Double> fuelPrices,
-                              int pumpsCount,
-                              double rating) {
+                              int pumpsCount, double rating) {
             this.name = name;
             this.address = address;
             this.fuelPrices = fuelPrices;
@@ -306,20 +530,10 @@ public class GasFragment extends Fragment {
             this.rating = rating;
         }
 
-        public String getName() {
-            return name;
-        }
-        public String getAddress() {
-            return address;
-        }
-        public Map<String, Double> getFuelPrices() {
-            return fuelPrices;
-        }
-        public int getPumpsCount() {
-            return pumpsCount;
-        }
-        public double getRating() {
-            return rating;
-        }
+        public String getName() { return name; }
+        public String getAddress() { return address; }
+        public Map<String, Double> getFuelPrices() { return fuelPrices; }
+        public int getPumpsCount() { return pumpsCount; }
+        public double getRating() { return rating; }
     }
 }

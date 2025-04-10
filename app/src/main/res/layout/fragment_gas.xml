@@ -11,22 +11,63 @@
         android:id="@+id/mapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:layout_editor_absoluteX="40dp"
-        tools:layout_editor_absoluteY="47dp">
+        tools:layout_editor_absoluteX="16dp"
+        tools:layout_editor_absoluteY="0dp">
 
         <ImageButton
             android:id="@+id/trafficButton"
             android:layout_width="30dp"
             android:layout_height="65dp"
             android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
             android:layout_marginEnd="31dp"
             android:layout_marginBottom="610dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:layout_alignParentBottom="true"
-            android:layout_centerHorizontal="true"
             android:contentDescription="Показать пробки"
-
             android:src="@drawable/trafficlight"
+            android:textAlignment="center"
+            tools:ignore="MissingConstraints" />
+
+        <ImageButton
+            android:id="@+id/locationButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginEnd="25dp"
+            android:layout_marginBottom="553dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Мое местоположение"
+            android:src="@drawable/locationoff"
+            android:textAlignment="center"
+            tools:ignore="MissingConstraints" />
+
+        <ImageButton
+            android:id="@+id/zoomInButton"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginEnd="28dp"
+            android:layout_marginBottom="332dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Приближение"
+            android:src="@drawable/plusbutton"
+            android:textAlignment="center"
+            tools:ignore="MissingConstraints" />
+
+        <ImageButton
+            android:id="@+id/zoomOutButton"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginEnd="28dp"
+            android:layout_marginBottom="293dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Уменьшение"
+            android:src="@drawable/minusbutton"
             android:textAlignment="center"
             tools:ignore="MissingConstraints" />
     </com.yandex.mapkit.mapview.MapView>
